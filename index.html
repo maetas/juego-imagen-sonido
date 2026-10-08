@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Relaciona Imagen y Sonido</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#172033;--muted:#667085;--accent:#6c63ff;--good:#16a34a;--bad:#dc2626;--line:#e4e7ec}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:#fff;border-bottom:1px solid var(--line);padding:14px 18px;display:flex;gap:12px;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
+h1,h2,h3{margin:0 0 8px}.wrap{max-width:1100px;margin:auto;padding:20px}.tabs{display:flex;gap:8px;flex-wrap:wrap}.tab,button{border:0;border-radius:12px;padding:11px 15px;font-weight:700;cursor:pointer;font-size:15px}.tab{background:#eef0f5}.tab.active,button.primary{background:var(--accent);color:#fff}button.secondary{background:#eef0f5;color:var(--ink)}button.danger{background:#fee2e2;color:#991b1b}.panel,.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:16px}.cats{display:flex;gap:9px;overflow:auto;padding:4px 0 8px}.cat{white-space:nowrap;background:#fff;border:1px solid var(--line);padding:10px 14px;border-radius:999px;cursor:pointer}.cat.active{background:#ede9fe;border-color:#c4b5fd;color:#5b21b6;font-weight:800}.gamegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:18px}.gamegrid>.panel{min-width:0}.item{padding:15px;border:2px solid var(--line);border-radius:18px;background:#fff;text-align:center}.item.selected{border-color:var(--accent);background:#f4f2ff}.item.correct{border-color:var(--good);background:#ecfdf3}.item.wrong{border-color:var(--bad);background:#fef2f2}.item img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:14px;background:#f1f5f9}.sound{width:100%;margin-top:10px;background:#111827;color:#fff}.status{text-align:center;font-weight:800;min-height:28px;margin-top:14px}.editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.field{display:flex;flex-direction:column;gap:6px;margin:10px 0}.field input,.field select{font:inherit;padding:11px;border:1px solid #d0d5dd;border-radius:10px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.small{font-size:13px;color:var(--muted)}.edititem{display:grid;grid-template-columns:72px 1fr auto;gap:12px;align-items:center;padding:10px;border-top:1px solid var(--line)}.edititem img{width:72px;height:72px;object-fit:cover;border-radius:10px}.locked{text-align:center;padding:30px}.hidden{display:none!important}@media(max-width:700px){.editor-grid{grid-template-columns:1fr}.wrap{padding:12px}.gamegrid{grid-template-columns:repeat(2,minmax(0,1fr))}.edititem{grid-template-columns:60px 1fr}.edititem .actions{grid-column:1/-1}.edititem img{width:60px;height:60px}}
+</style>
+</head>
+<body>
+<header><strong>🎧 Relaciona imagen + sonido</strong><div class="tabs"><button class="tab active" id="playTab">Jugar</button><button class="tab" id="editTab">Editar</button></div></header>
+<main class="wrap">
+<section id="playView">
+<div class="panel"><h2>Elige una categoría</h2><div id="cats" class="cats"></div></div>
+<div class="panel"><h2 id="gameTitle">Relaciona cada imagen con su sonido</h2><p class="small">Toca una imagen y después el botón de sonido que corresponda. También puedes escuchar los sonidos antes de elegir.</p><div id="game"></div><div id="status" class="status"></div><div class="row" style="justify-content:center"><button class="primary" id="newRound">🔄 Nueva ronda</button></div></div>
+</section>
+<section id="editView" class="hidden">
+<div id="login" class="panel locked"><h2>🔒 Área de edición</h2><p>Inicia sesión para administrar categorías, imágenes y sonidos.</p><form id="loginForm" class="row" style="justify-content:center"><input id="email" type="email" placeholder="Correo del administrador" aria-label="Correo del administrador" autocomplete="username" style="padding:11px;border:1px solid #d0d5dd;border-radius:10px"><input id="pass" type="password" placeholder="Contraseña" aria-label="Contraseña" autocomplete="current-password" style="padding:11px;border:1px solid #d0d5dd;border-radius:10px"><button class="primary">Entrar</button></form><button id="logoutBtn" class="secondary hidden" style="margin-top:10px">Cerrar sesión</button><div id="loginMsg" class="small"></div></div>
+<div id="editor" class="hidden">
+<div class="panel"><h2>Categorías</h2><div class="row"><input id="catName" placeholder="Nueva categoría" style="flex:1;min-width:180px;padding:11px;border:1px solid #d0d5dd;border-radius:10px"><button class="primary" id="addCat">+ Agregar</button></div><div id="catAdmin" style="margin-top:12px"></div></div>
+<div class="panel"><h2>Agregar elemento</h2><div class="editor-grid">
+<div><div class="field"><label>Nombre del elemento</label><input id="itemName" placeholder="Ej. Perro"></div><div class="field"><label>Categoría</label><select id="itemCat"></select></div></div>
+<div><div class="field"><label>Imagen</label><input id="itemImage" type="file" accept="image/*"></div><div class="field"><label>Sonido</label><input id="itemAudio" type="file" accept="audio/*"></div></div>
+</div><button class="primary" id="addItem">Agregar elemento</button><p class="small">☁️ En modo nube, los cambios se guardan en internet y aparecen en los demás dispositivos. Exportar e Importar queda como respaldo.</p></div>
+<div class="panel"><h2>Elementos</h2><div id="itemAdmin"></div><div class="row" style="margin-top:14px"><button class="secondary" id="exportBtn">⬇ Exportar contenido</button><label class="tab" style="cursor:pointer">⬆ Importar contenido<input id="importBtn" type="file" accept=".json,application/json" hidden></label><button class="danger" id="resetBtn">Restablecer ejemplo</button></div></div>
+</div>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+
+// ===== CONEXIÓN A SUPABASE =====
+// Pega aquí los datos de Project Settings > API.
+// NUNCA uses una service_role key en este archivo.
+const SUPABASE_URL = 'https://tgdznmxvusctqoglpmbb.supabase.co';
+const SUPABASE_KEY = 'sb_publishable__KSzocnREUF5Tj_noZfA_w_NuXuqGfg';
+const CLOUD_ENABLED = SUPABASE_URL.startsWith('http') && !SUPABASE_URL.includes('PEGA_AQUI');
+const sb = CLOUD_ENABLED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+}) : null;
+
+async function loadCloudData(){
+  if(!sb) return null;
+  const {data:cats,error:ce}=await sb.from('game_categories').select('id,name').order('created_at',{ascending:true});
+  if(ce) throw ce;
+  const {data:items,error:ie}=await sb.from('game_items').select('id,name,category_id,image_url,audio_url').order('created_at',{ascending:true});
+  if(ie) throw ie;
+  return {
+    categories:(cats||[]).map(c=>({id:c.id,name:c.name})),
+    items:(items||[]).map(i=>({id:i.id,name:i.name,cat:i.category_id,image:i.image_url||'',audio:i.audio_url||''}))
+  };
+}
+
+async function uploadCloudFile(file,folder){
+  const ext=(file.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const path=folder+'/'+crypto.randomUUID()+'.'+ext;
+  const {error}=await sb.storage.from('game-assets').upload(path,file,{contentType:file.type||undefined});
+  if(error) throw error;
+  return sb.storage.from('game-assets').getPublicUrl(path).data.publicUrl;
+}
+
+const KEY='imagenSonidoENMJN_v1';
+const sample={categories:[
+{id:'animales',name:'Animales'},
+{id:'vehiculos',name:'Vehículos'},
+{id:'casa',name:'Objetos de casa'}
+],items:[
+{id:'perro',name:'Perro',cat:'animales',image:'',audio:''},
+{id:'gato',name:'Gato',cat:'animales',image:'',audio:''},
+{id:'auto',name:'Auto',cat:'vehiculos',image:'',audio:''}
+]};
+let data=load(), selected=null, solved=new Set(), activeCat=data.categories[0]?.id||'';
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||structuredClone(sample)}catch(e){return structuredClone(sample)}}
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function placeholder(name){return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="500" height="400"><rect width="100%" height="100%" fill="#eef0f5"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="42" fill="#667085">${name}</text></svg>`)}
+function renderCats(){const el=document.querySelector('#cats');el.innerHTML=data.categories.map(c=>`<button class="cat ${c.id===activeCat?'active':''}" data-cat="${c.id}">${esc(c.name)}</button>`).join('')||'<span class="small">No hay categorías.</span>';el.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{activeCat=b.dataset.cat;newRound()})}
+function renderGame(){
+const items=data.items.filter(x=>x.cat===activeCat);
+solved=new Set();selected=null;
+document.querySelector('#gameTitle').textContent=(data.categories.find(c=>c.id===activeCat)?.name||'Juego')+' — relaciona imagen y sonido';
+const g=document.querySelector('#game');
+if(!items.length){g.innerHTML='<p class="small">Agrega elementos desde Editar.</p>';return}
+if(items.length<2){
+g.innerHTML='<div class="panel" style="margin-top:0"><strong>Agrega al menos 2 elementos</strong><p class="small">Con dos o más elementos el juego puede mezclar las imágenes y los sonidos para hacerlo más desafiante.</p></div>';
+return;
+}
+const shuffledImages=[...items].sort(()=>Math.random()-.5);
+const shuffledSounds=[...items].sort(()=>Math.random()-.5);
+
+g.innerHTML=`
+<div class="gamegrid" style="margin-top:0">
+<div class="panel" style="margin-top:0">
+<h3>🖼️ Imágenes</h3>
+<p class="small">Selecciona una imagen.</p>
+<div id="imageChoices" class="gamegrid"></div>
+</div>
+<div class="panel" style="margin-top:0">
+<h3>🔊 Sonidos</h3>
+<p class="small">Después selecciona el sonido que creas que corresponde.</p>
+<div id="soundChoices" class="gamegrid"></div>
+</div>
+</div>`;
+
+document.querySelector('#imageChoices').innerHTML=shuffledImages.map(x=>`
+<div class="item imageChoice" data-id="${x.id}" tabindex="0" role="button">
+<img src="${x.image||placeholder(x.name)}" alt="${esc(x.name)}">
+<div style="font-weight:800;margin-top:8px">${esc(x.name)}</div>
+</div>`).join('');
+
+document.querySelector('#soundChoices').innerHTML=shuffledSounds.map((x,i)=>`
+<div class="item soundChoice" data-id="${x.id}" tabindex="0" role="button">
+<div style="font-size:34px">🔊</div>
+<div style="font-weight:800;margin-top:8px">Sonido ${i+1}</div>
+<button class="sound" type="button">▶ Escuchar</button>
+</div>`).join('');
+
+document.querySelectorAll('.imageChoice').forEach(card=>{
+card.onclick=()=>{
+if(solved.has(card.dataset.id))return;
+document.querySelectorAll('.imageChoice').forEach(c=>c.classList.remove('selected'));
+card.classList.add('selected');
+selected=card.dataset.id;
+status('Ahora elige uno de los sonidos.','');
+};
+card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();card.click()}};
+});
+
+document.querySelectorAll('.soundChoice').forEach(card=>{
+const item=data.items.find(x=>x.id===card.dataset.id);
+card.onclick=e=>{
+if(e.target.closest('.sound'))return;
+if(!selected){status('Primero selecciona una imagen.','bad');return}
+if(solved.has(card.dataset.id))return;
+if(selected===card.dataset.id){
+solved.add(card.dataset.id);
+document.querySelector(`.imageChoice[data-id="${selected}"]`)?.classList.remove('selected');
+document.querySelector(`.imageChoice[data-id="${selected}"]`)?.classList.add('correct');
+card.classList.add('correct');
+status('¡Correcto! 🎉 El sonido corresponde a la imagen.','good');
+selected=null;
+if(solved.size===items.length)status('¡Excelente! 🏆 Completaste toda la categoría.','good');
+}else{
+card.classList.add('wrong');
+status('No corresponde. Escucha de nuevo e inténtalo.','bad');
+setTimeout(()=>card.classList.remove('wrong'),600);
+}
+};
+card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();card.click()}};
+card.querySelector('.sound').onclick=e=>{
+e.stopPropagation();
+if(!item?.audio){status('Este elemento todavía no tiene sonido.','bad');return}
+new Audio(item.audio).play();
+};
+});
+}
+function status(t,kind){const s=document.querySelector('#status');s.textContent=t;s.style.color=kind==='bad'?'var(--bad)':kind==='good'?'var(--good)':'var(--ink)'}
+function newRound(){renderCats();renderGame();status('','')}
+document.querySelector('#newRound').onclick=newRound;
+document.querySelector('#playTab').onclick=()=>switchView('play');document.querySelector('#editTab').onclick=()=>switchView('edit');
+function switchView(v){document.querySelector('#playView').classList.toggle('hidden',v!=='play');document.querySelector('#editView').classList.toggle('hidden',v!=='edit');document.querySelector('#playTab').classList.toggle('active',v==='play');document.querySelector('#editTab').classList.toggle('active',v==='edit');if(v==='edit')renderEditor()}
+async function showEditorIfAuthenticated(){
+  if(!sb){document.querySelector('#loginMsg').textContent='Supabase no está configurado.';return}
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){
+    document.querySelector('#login').classList.add('hidden');
+    document.querySelector('#editor').classList.remove('hidden');
+    document.querySelector('#logoutBtn').classList.remove('hidden');
+    renderEditor();
+  }else{
+    document.querySelector('#login').classList.remove('hidden');
+    document.querySelector('#editor').classList.add('hidden');
+    document.querySelector('#logoutBtn').classList.add('hidden');
+  }
+}
+document.querySelector('#loginForm').onsubmit=async e=>{
+  e.preventDefault();
+  document.querySelector('#loginMsg').textContent='Iniciando sesión...';
+  const email=document.querySelector('#email').value.trim();
+  const password=document.querySelector('#pass').value;
+  if(!email||!password){document.querySelector('#loginMsg').textContent='Escribe tu correo y contraseña.';return}
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error){document.querySelector('#loginMsg').textContent='No se pudo iniciar sesión: '+error.message;return}
+  document.querySelector('#loginMsg').textContent='';
+  document.querySelector('#pass').value='';
+  await showEditorIfAuthenticated();
+};
+document.querySelector('#logoutBtn').onclick=async()=>{
+  await sb.auth.signOut();
+  await showEditorIfAuthenticated();
+};
+document.querySelector('#addCat').onclick=async()=>{
+const n=document.querySelector('#catName').value.trim();if(!n)return;
+if(data.categories.some(c=>c.name.toLowerCase()===n.toLowerCase()))return;
+try{
+if(CLOUD_ENABLED){
+const {data:c,error}=await sb.from('game_categories').insert({name:n}).select('id,name').single();
+if(error)throw error; data.categories.push(c);activeCat=c.id;
+}else{const id='c_'+Date.now();data.categories.push({id,name:n});activeCat=id;save();}
+document.querySelector('#catName').value='';renderEditor();newRound();
+}catch(e){alert('No se pudo guardar la categoría: '+e.message)}
+};
+async function fileData(file){return new Promise((res,rej)=>{if(!file){res('');return}const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
+document.querySelector('#addItem').onclick=async()=>{
+const name=document.querySelector('#itemName').value.trim(),cat=document.querySelector('#itemCat').value,img=document.querySelector('#itemImage').files[0],aud=document.querySelector('#itemAudio').files[0];
+if(!name||!cat||!img||!aud){alert('Completa nombre, categoría, imagen y sonido.');return}
+try{
+if(CLOUD_ENABLED){
+const image_url=await uploadCloudFile(img,'images'),audio_url=await uploadCloudFile(aud,'audio');
+const {data:i,error}=await sb.from('game_items').insert({name,category_id:cat,image_url,audio_url}).select('id,name,category_id,image_url,audio_url').single();
+if(error)throw error;data.items.push({id:i.id,name:i.name,cat:i.category_id,image:i.image_url,audio:i.audio_url});
+}else{data.items.push({id:'i_'+Date.now(),name,cat,image:await fileData(img),audio:await fileData(aud)});save();}
+document.querySelector('#itemName').value='';document.querySelector('#itemImage').value='';document.querySelector('#itemAudio').value='';renderEditor();newRound();
+}catch(e){alert('No se pudo guardar el elemento: '+e.message)}
+};
+function renderEditor(){document.querySelector('#itemCat').innerHTML=data.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');document.querySelector('#catAdmin').innerHTML=data.categories.map(c=>`<div class="row" style="padding:8px 0;border-top:1px solid var(--line)"><strong style="flex:1">${esc(c.name)}</strong><button class="danger" data-delcat="${c.id}">Eliminar</button></div>`).join('');document.querySelectorAll('[data-delcat]').forEach(b=>b.onclick=async()=>{
+const id=b.dataset.delcat;if(data.items.some(i=>i.cat===id)){alert('No puedes eliminar una categoría que contiene elementos. Elimina sus elementos primero.');return}
+try{if(CLOUD_ENABLED){const {error}=await sb.from('game_categories').delete().eq('id',id);if(error)throw error}else save();data.categories=data.categories.filter(c=>c.id!==id);activeCat=data.categories[0]?.id||'';renderEditor();newRound()}catch(e){alert('No se pudo eliminar: '+e.message)}
+});
+document.querySelector('#itemAdmin').innerHTML=data.items.length?data.items.map(x=>`<div class="edititem"><img src="${x.image||placeholder(x.name)}" alt=""><div><strong>${esc(x.name)}</strong><div class="small">${esc(data.categories.find(c=>c.id===x.cat)?.name||'Sin categoría')}</div></div><div class="actions"><button class="danger" data-delitem="${x.id}">Eliminar</button></div></div>`).join(''):'<p class="small">No hay elementos.</p>';document.querySelectorAll('[data-delitem]').forEach(b=>b.onclick=async()=>{
+try{if(CLOUD_ENABLED){const {error}=await sb.from('game_items').delete().eq('id',b.dataset.delitem);if(error)throw error}else save();data.items=data.items.filter(i=>i.id!==b.dataset.delitem);renderEditor();newRound()}catch(e){alert('No se pudo eliminar: '+e.message)}
+})}
+document.querySelector('#exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(data)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='contenido-imagen-sonido.json';a.click();URL.revokeObjectURL(a.href)}
+document.querySelector('#importBtn').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());if(!Array.isArray(j.categories)||!Array.isArray(j.items))throw Error();data=j;activeCat=data.categories[0]?.id||'';save();renderEditor();newRound();alert('Contenido importado correctamente.')}catch(err){alert('Archivo no válido.')}}
+document.querySelector('#resetBtn').onclick=()=>{if(confirm('¿Restablecer los datos de ejemplo?')){data=structuredClone(sample);activeCat=data.categories[0].id;save();renderEditor();newRound()}}
+(async()=>{
+  try{
+    if(CLOUD_ENABLED){
+      data=await loadCloudData();
+      activeCat=data.categories[0]?.id||'';
+      await showEditorIfAuthenticated();
+      sb.auth.onAuthStateChange(()=>showEditorIfAuthenticated());
+    }
+  }catch(e){
+    console.error(e);
+    alert('No se pudo conectar con Supabase. Revisa la URL, la clave y las políticas.');
+  }
+  newRound();
+})();
+</script>
+</body>
+</html>
